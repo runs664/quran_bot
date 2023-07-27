@@ -1,6 +1,7 @@
 import discord, quiz, random, os, asyncio
 from dotenv import load_dotenv
 from discord.ext import commands,tasks
+from discord import app_commands
 
 load_dotenv()
 
@@ -9,11 +10,42 @@ bot = commands.Bot(command_prefix='>>', intents=intents)
 
 @bot.event
 async def on_ready():
+    await bot.tree.sync(guild=discord.Object(id=836835374696628244))
     print("The bot is ready!")
     
-@bot.command()
-async def hello(ctx):
-    await ctx.send("Hello!")
+# @bot.tree.command(name="number guess", description="Number guessing game commands", guild=discord.Object(id=836835374696628244))
+# async def number_guess(interaction : discord.Interaction):
+    
+    
+# @bot.tree.command(name="quran-quiz", description="Qur'an related quiz commands", guild=discord.Object(id=836835374696628244))
+# @app_commands.choices(tipe=[
+#     app_commands.Choice(name="guess chapter name from verse - audio", value=0), 
+#     app_commands.Choice(name="guess chapter name from verse - text", value=1),
+#     app_commands.Choice(name="guess next verse from verse - audio", value=2),
+#     app_commands.Choice(name="guess next verse from verse - text", value=3),
+#     app_commands.Choice(name="guess previous verse from verse - audio", value=4),
+#     app_commands.Choice(name="guess previous verse from verse - text", value=5),
+#     ])
+# async def quran_quiz(interaction : discord.Interaction, tipe : app_commands.Choice[int], juz : int = 30, qari : int = 3):
+#     ctx = await bot.get_context(interaction)
+#     # if choice name from value contains audio, then call the bot to join the voice channel
+#     if tipe.name.endswith("audio"):
+#         await join(ctx)
+    
+#     if tipe.value == 0:
+#         await quran_quiz_0(ctx, juz, qari)
+#     elif tipe.value == 1:
+#         pass
+
+@bot.command(name='quran.quiz.menu', help='To show the menu of the Quran quiz')
+async def quran_menu(ctx):
+    embed = discord.Embed(title="Quran Quiz Menu", description="Akses perintah dengan mengetik perintah\n```perintah diantara [param] adalah opsional```", color=0x00ff00)
+    embed.add_field(name="1. Guess chapter name from verse - audio", value="```>>quran.quiz.0 audio [juz] [qari]```", inline=False)
+    embed.add_field(name="2. Guess chapter name from verse - text", value="```>>quran.quiz.0 text [juz]```", inline=False)
+    embed.add_field(name="3. Guess next verse from verse - audio", value="```>>quran.quiz.1 audio [juz] [qari]```", inline=False)
+    embed.add_field(name="4. Guess next verse from verse - text", value="```>>quran.quiz.1 text [juz]```", inline=False)
+    await ctx.send(embed=embed)
+    
     
 @bot.command(name='join', help='Tells the bot to join the voice channel')
 async def join(ctx):
@@ -83,8 +115,8 @@ async def quran_random(ctx):
     except:
         await ctx.send("The bot is not connected to a voice channel.")
 
-@bot.command(name='quran.quiz.surah_name_from_audio_verse_all', help='To play a random verse from the Quran and ask the user to guess the surah name')
-async def quran_quiz_1(ctx):
+@bot.command(name='quran.quiz.0e', help='To play a random verse from the Quran and ask the user to guess the surah name')
+async def quran_quiz_0e(ctx):
     server = ctx.message.guild
     voice_channel = server.voice_client
     
@@ -122,12 +154,12 @@ async def quran_quiz_1(ctx):
         await ctx.send("Correct!")
         if voice_channel.is_playing():
             await voice_channel.stop()
-        await quran_quiz_1(ctx)
+        await quran_quiz_0e(ctx)
     else:
         await ctx.send("Wrong!")
         
-@bot.command(name='quran.quiz.surah_name_from_verse_audio_juz', help='To play a random verse from the Quran and ask the user to guess the surah name')
-async def quran_quiz_2(ctx, juz = 30, qari = 7):
+@bot.command(name='quran.quiz.0', help='To play a random verse from the Quran and ask the user to guess the surah name')
+async def quran_quiz_0(ctx, tipe, juz = 30, qari = 7):
     server = ctx.message.guild
     voice_channel = server.voice_client
     
@@ -149,11 +181,13 @@ async def quran_quiz_2(ctx, juz = 30, qari = 7):
     ans_index = choices.index(correct_answer)
     user_ans = ""
     
-    async with ctx.typing():
-        voice_channel.play(discord.FFmpegPCMAudio(executable="ffmpeg.exe", source=audio_url))
-        # await ctx.send(f"> {glyph}\n is from which surah? \n A. {choices[0]}\n B. {choices[1]}\n C. {choices[2]}\n D. {choices[3]}")
-        await ctx.send(f"Listen, that audio is from which surah? \n A. {choices[0]}\n B. {choices[1]}\n C. {choices[2]}\n D. {choices[3]}\n or type `stop` to stop the quiz")
-
+    if tipe == 'audio':
+        async with ctx.typing():
+            voice_channel.play(discord.FFmpegPCMAudio(executable="ffmpeg.exe", source=audio_url))
+            await ctx.send(f"Listen, that audio is from which surah? \n A. {choices[0]}\n B. {choices[1]}\n C. {choices[2]}\n D. {choices[3]}\n or type `stop` to stop the quiz")
+    elif tipe == 'text':
+        await ctx.send(f"> {glyph}\n is from which surah? \n A. {choices[0]}\n B. {choices[1]}\n C. {choices[2]}\n D. {choices[3]}\n or type `stop` to stop the quiz")
+        
     def is_correct(m):
         return m.author == ctx.author
 
@@ -164,19 +198,21 @@ async def quran_quiz_2(ctx, juz = 30, qari = 7):
         
     if user_ans.content.lower() == ['a','b','c','d'][ans_index].lower():
         await ctx.send("Correct!")
-        if voice_channel.is_playing():
-            await voice_channel.stop()
-        await quran_quiz_2(ctx, juz, qari)
+        if tipe == 'audio':
+            if voice_channel.is_playing():
+                await voice_channel.stop()
+        await quran_quiz_0(ctx, tipe, juz, qari)
     elif user_ans.content.lower() == "stop".lower():
         await ctx.send("Stopped!")
     else:
         await ctx.send(f"Wrong! {correct_answer}")
-        if voice_channel.is_playing():
-            await voice_channel.stop()
-        await quran_quiz_2(ctx, juz, qari)
+        if tipe == 'audio':
+            if voice_channel.is_playing():
+                await voice_channel.stop()
+        await quran_quiz_0(ctx, tipe, juz, qari)
         
-@bot.command(name='quran.quiz.next_verse', help='To play a random verse from the Quran and ask the user to guess the next verse')
-async def quran_quiz_3(ctx, juz = 30, qari = 7):
+@bot.command(name='quran.quiz.1', help='To play a random verse from the Quran and ask the user to guess the next verse')
+async def quran_quiz_1(ctx, tipe, juz = 30, qari = 7):
     server = ctx.message.guild
     voice_channel = server.voice_client
     
@@ -186,6 +222,7 @@ async def quran_quiz_3(ctx, juz = 30, qari = 7):
     verse_number = verse_key.split(':')[1]
     verse_number = int(verse_number) + 1
     audio_url = verse_data['audio']['url']
+    glyph = quiz.get_verse_glyph(f"{chapter_number}:{verse_number - 1}")
     correct_answer = quiz.get_verse_glyph(f"{chapter_number}:{verse_number}")
     
     invalid_answers = []
@@ -208,10 +245,12 @@ async def quran_quiz_3(ctx, juz = 30, qari = 7):
     
     user_ans = ""
     
-    async with ctx.typing():
-        voice_channel.play(discord.FFmpegPCMAudio(executable="ffmpeg.exe", source=audio_url))
-        # await ctx.send(f"> {glyph}\n is from which surah? \n A. {choices[0]}\n B. {choices[1]}\n C. {choices[2]}\n D. {choices[3]}")
-        await ctx.send(f"Dengarkan, apakah ayat dibawah terletak setelah ayat yang didengar? \n {choice} \n A. Benar\n B. Salah\n or type `stop` to stop the quiz")
+    if tipe == 'audio':
+        async with ctx.typing():
+            voice_channel.play(discord.FFmpegPCMAudio(executable="ffmpeg.exe", source=audio_url))
+            await ctx.send(f"Dengarkan, ayat dibawah terletak setelah ayat yang didengar. \n {choice} \n A. Benar\n B. Salah\n or type `stop` to stop the quiz")
+    elif tipe == 'text':
+        await ctx.send(f"> Setelah ayat ini \n{glyph}\n adalah ayat \n {choice} \n A. Benar\n B. Salah\n or type `stop` to stop the quiz")
 
     def is_correct(m):
         return m.author == ctx.author
@@ -223,16 +262,18 @@ async def quran_quiz_3(ctx, juz = 30, qari = 7):
         
     if user_ans.content.lower() == ans.lower():
         await ctx.send("Correct!")
-        if voice_channel.is_playing():
-            await voice_channel.stop()
-        await quran_quiz_3(ctx, juz, qari)
+        if tipe == 'audio':
+            if voice_channel.is_playing():
+                await voice_channel.stop()
+        await quran_quiz_1(ctx, tipe, juz, qari)
     elif user_ans.content.lower() == "stop".lower():
         await ctx.send("Stopped!")
     else:
         await ctx.send("Wrong!")
-        if voice_channel.is_playing():
-            await voice_channel.stop()
-        await quran_quiz_3(ctx, juz, qari)
+        if tipe == 'audio':
+            if voice_channel.is_playing():
+                await voice_channel.stop()
+        await quran_quiz_1(ctx, tipe, juz, qari)
     
     
 
