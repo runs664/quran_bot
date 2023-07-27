@@ -52,13 +52,13 @@ def get_random_verse_data_from_juz(juz, qari):
     if verse_data["audio"]['url'].startswith("mirrors.quranicaudio.com"):
         verse_data["audio"]['url'] = "https://" + verse_data["audio"]['url']
     elif verse_data["audio"]['url'].startswith("//mirrors.quranicaudio.com"):
-        pass
+        verse_data["audio"]['url'] = verse_data["audio"]['url'].replace("//", "https://")
     else:
         verse_data["audio"]['url'] = "https://verses.quran.com/" + verse_data["audio"]['url']
 
     return verse_data
 
-print(get_random_verse_data_from_juz(30, 12))
+# print(get_random_verse_data_from_juz(30, 12))
 
 # def get_all_verse_key_by_juz(juz):
 #     url = f"https://api.quran.com/api/v4/verses/by_juz/{juz}"
