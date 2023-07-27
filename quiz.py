@@ -1,5 +1,6 @@
 import requests
 import random
+from PIL import Image, ImageFont
 
 # verse_key sections
 def get_random_verse_key():
@@ -57,6 +58,24 @@ def get_random_verse_data_from_juz(juz, qari):
         verse_data["audio"]['url'] = "https://verses.quran.com/" + verse_data["audio"]['url']
 
     return verse_data
+
+def get_glyph_image_from_verse_key(verse_key, filename="glyph.png", style="QFC", font_size=40, color=(255, 255, 255, 255)):
+    url = "https://api.quran.com/api/v4/quran/verses/code_v2"
+    querystring = {"verse_key":verse_key}
+    headers = {"Content-Type": "application/json"}
+    response = requests.request("GET", url, headers=headers, params=querystring)
+    
+    
+    text = response.json()["verses"][0]['code_v2'][::-1][1:]
+    font_size = 50
+    font_filepath = f"https://cdn.rawgit.com/mustafa0x/qpc-fonts/f93bf5f3/mushaf-v2/QCF2{response.json()['verses'][0]['v2_page']}"
+    color = (255, 255, 255, 255)
+
+    font = ImageFont.truetype(font_filepath, size=font_size)
+    mask_image = font.getmask(text, "L")
+    img = Image.new("RGBA", mask_image.size)
+    img.im.paste(color, (0, 0) + mask_image.size, mask_image)
+    img.save(filename)
 
 # print(get_random_verse_data_from_juz(30, 12))
 
