@@ -240,7 +240,7 @@ async def quran_quiz_0(ctx, tipe, juz=30, qari=7):
     chapter_number = verse_key.split(':')[0]
     chapter_number = int(chapter_number)
     audio_url = verse_data['audio']['url']
-    quiz.get_glyph_image_from_verse_key(verse_key)
+    jumlah = quiz.get_glyph_image_from_verse_key(verse_key)
     
     correct_answer = quiz.get_chapter_name_from_verse_key(verse_key)
 
@@ -268,9 +268,10 @@ async def quran_quiz_0(ctx, tipe, juz=30, qari=7):
                 f"Listen, that audio is from which surah? \n A. {choices[0]}\n B. {choices[1]}\n C. {choices[2]}\n D. {choices[3]}\n or type `stop` to stop the quiz"
             )
     elif tipe == 'text':
-        await ctx.send(file=discord.File('glyph.png'))
+        for i in range(jumlah + 1):
+            await ctx.send(file=discord.File(f'img/glyph{i}.png'))
         await ctx.send(
-            f"> Image above is from which surah? \n A. {choices[0]}\n B. {choices[1]}\n C. {choices[2]}\n D. {choices[3]}\n or type `stop` to stop the quiz"
+            f"> Verse above is from which surah? \n A. {choices[0]}\n B. {choices[1]}\n C. {choices[2]}\n D. {choices[3]}\n or type `stop` to stop the quiz"
         )
 
     def is_correct(m):
@@ -312,10 +313,9 @@ async def quran_quiz_1(ctx, tipe, juz=30, qari=7):
     verse_number = verse_key.split(':')[1]
     verse_number = int(verse_number) + 1
     audio_url = verse_data['audio']['url']
-    quiz.get_glyph_image_from_verse_key(f"{chapter_number}:{verse_number - 1}")
-    correct_answer = quiz.get_glyph_image_from_verse_key(f"{chapter_number}:{verse_number}", filename='glyph2.png')
-
-    invalid_answers = []
+    wrapper_soal = quiz.get_glyph_image_from_verse_key(f"{chapter_number}:{verse_number - 1}", filename='soal')
+    wrapper_correct = quiz.get_glyph_image_from_verse_key(f"{chapter_number}:{verse_number}", filename='benar')
+    
     invalid_sequence = [
         x for x in range(verse_number - 4, verse_number + 4)
         if x != verse_number and x != verse_number - 1
@@ -323,18 +323,18 @@ async def quran_quiz_1(ctx, tipe, juz=30, qari=7):
 
     for i in invalid_sequence:
         try:
-            invalid_answers.append(
-                quiz.get_verse_glyph(f"{chapter_number}:{i}"))
+            wrapper_wrong = quiz.get_glyph_image_from_verse_key(f"{chapter_number}:{i}", filename='salah')
+            break
         except:
             pass
 
     prob = random.randint(1, 2)
 
     if prob == 1:
-        choice = random.sample(invalid_answers, 1)
+        choice = [wrapper_wrong, "salah"]
         ans = 'b'
     else:
-        choice = [correct_answer]
+        choice = [wrapper_correct, "benar"]
         ans = 'a'
 
     user_ans = ""
@@ -345,12 +345,22 @@ async def quran_quiz_1(ctx, tipe, juz=30, qari=7):
                 discord.FFmpegPCMAudio(executable="ffmpeg",
                                        source=audio_url,
                                        **FFMPEG_OPTIONS))
-            await ctx.send(
-                f"Dengarkan, ayat dibawah terletak setelah ayat yang didengar. \n {choice} \n A. Benar\n B. Salah\n or type `stop` to stop the quiz"
-            )
+            await ctx.send("Dengarkan, ayat dibawah terletak setelah ayat yang didengar.")
+            
+            for i in range(choice[0] + 1):
+                await ctx.send(file=discord.File(f'img/{choice[1]}{i}.png'))
+                
+            await ctx.send("A. Benar\nB. Salah\nor type `stop` to stop the quiz")
+            
     elif tipe == 'text':
-        await ctx.send(file=discord.File('glyph.png'))
-        await ctx.send("Ayat dibawah terletak setelah ayat diatas.", file=discord.File('glyph2.png'))
+        for i in range(wrapper_soal + 1):
+            await ctx.send(file=discord.File(f'img/soal{i}.png'))
+        
+        await ctx.send("lanjutannya adalah")
+        
+        for i in range(choice[0] + 1):
+            await ctx.send(file=discord.File(f'img/{choice[1]}{i}.png'))
+            
         await ctx.send("A. Benar\nB. Salah\nor type `stop` to stop the quiz")
 
     def is_correct(m):
