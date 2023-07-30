@@ -110,17 +110,46 @@ def get_glyph_image_from_verse_key(verse_key, filename="glyph", style="QFC", fon
         page_number = "00" + str(page_number)
         
     font_size = 30
-    font_filepath = f"https://cdn.rawgit.com/mustafa0x/qpc-fonts/f93bf5f3/mushaf-v2/QCF2{page_number}.ttf"
+    try:
+        font_filepath = f"https://cdn.rawgit.com/mustafa0x/qpc-fonts/f93bf5f3/mushaf-v2/QCF2{page_number}.ttf"
+        font = ImageFont.truetype(font_filepath, size=font_size)
+    except:
+        font_filepath = f"mushaf-v2/QCF2{page_number}.ttf"
+        font = ImageFont.truetype(font_filepath, size=font_size)
+        
     color = (255, 255, 255, 255)
 
     for i, j in enumerate(text):
-        font = ImageFont.truetype(font_filepath, size=font_size)
         mask_image = font.getmask(j[::-1], "L")
         img = Image.new("RGBA", mask_image.size)
         img.im.paste(color, (0, 0) + mask_image.size, mask_image)
         img.save(f"img/{filename}{i}.png")
         
     return i
+
+def get_glyph_image_from_code(page_number, code, filename="glyph", color=(255, 255, 255, 255)):
+    
+    if page_number >= 100:
+        pass
+    elif page_number >= 10:
+        page_number = "0" + str(page_number)
+    elif page_number < 10:
+        page_number = "00" + str(page_number)
+        
+    font_size = 30
+    try:
+        font_filepath = f"https://cdn.rawgit.com/mustafa0x/qpc-fonts/f93bf5f3/mushaf-v2/QCF2{page_number}.ttf"
+        font = ImageFont.truetype(font_filepath, size=font_size)
+    except:
+        font_filepath = f"mushaf-v2/QCF2{page_number}.ttf"
+        font = ImageFont.truetype(font_filepath, size=font_size)
+        
+    color = (255, 255, 255, 255)
+
+    mask_image = font.getmask(code, "L")
+    img = Image.new("RGBA", mask_image.size)
+    img.im.paste(color, (0, 0) + mask_image.size, mask_image)
+    img.save(f"img/{filename}.png")
 
 def get_uncompleted_glyph_image_from_verse_key(verse_key, filename="glyph", style="QFC", font_size=40, color=(255, 255, 255, 255)):
     url = "https://api.quran.com/api/v4/quran/verses/code_v2"
@@ -152,24 +181,35 @@ def get_uncompleted_glyph_image_from_verse_key(verse_key, filename="glyph", styl
         page_number = "00" + str(page_number)
         
     font_size = 30
-    font_filepath = f"https://cdn.rawgit.com/mustafa0x/qpc-fonts/f93bf5f3/mushaf-v2/QCF2{page_number}.ttf"
+    try:
+        font_filepath = f"https://cdn.rawgit.com/mustafa0x/qpc-fonts/f93bf5f3/mushaf-v2/QCF2{page_number}.ttf"
+        font = ImageFont.truetype(font_filepath, size=font_size)
+    except:
+        font_filepath = f"mushaf-v2/QCF2{page_number}.ttf"
+        font = ImageFont.truetype(font_filepath, size=font_size)
+        
     color = (255, 255, 255, 255)
 
     for i, j in enumerate(text):
-        font = ImageFont.truetype(font_filepath, size=font_size)
         mask_image = font.getmask(j[::-1], "L")
         img = Image.new("RGBA", mask_image.size)
         img.im.paste(color, (0, 0) + mask_image.size, mask_image)
         img.save(f"img/{filename}{i}.png")
-        
     
-    font = ImageFont.truetype(font_filepath, size=font_size)
     mask_image = font.getmask(text3, "L")
     img = Image.new("RGBA", mask_image.size)
     img.im.paste(color, (0, 0) + mask_image.size, mask_image)
     img.save(f"img/{filename}cropped.png")
         
-    return i, randomizer
+    return i, randomizer, sorted(index_hilang, reverse=True)
+
+def get_translation_from_verse_key(verse_key, language='id'):
+    url = f"https://api.quran.com/api/v4/verses/by_key/{verse_key}"
+    querystring = {"language":language, "words":"true","word_fields":"code_v2"}
+    headers = {"Content-Type": "application/json"}
+    response = requests.request("GET", url, headers=headers, params=querystring)
+    
+    return response.json()['verse']['words']
 
 # print(get_random_verse_data_from_juz(30, 12))
 
