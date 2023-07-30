@@ -49,20 +49,14 @@ async def quran_menu(ctx):
     embed = discord.Embed(
         title="Quran Quiz Menu",
         description=
-        "Akses perintah dengan mengetik perintah\n```perintah diantara [param] adalah opsional```",
+        "Akses perintah dengan mengetik perintah\n```perintah diantara <param> adalah wajib dan [param] adalah opsional```",
         color=0x00ff00)
-    embed.add_field(name="1. Guess chapter name from verse - audio",
-                    value="```>>quran.quiz.0 audio [juz] [qari]```contoh: ```>>quran.quiz.0 audio 30 3```",
-                    inline=False)
-    embed.add_field(name="2. Guess chapter name from verse - text",
-                    value="```>>quran.quiz.0 text [juz]```contoh: ```>>quran.quiz.0 text 30```",
-                    inline=False)
-    embed.add_field(name="3. Guess next verse from verse - audio",
-                    value="```>>quran.quiz.1 audio [juz] [qari]```contoh: ```>>quran.quiz.1 audio 30 3```",
-                    inline=False)
-    embed.add_field(name="4. Guess next verse from verse - text",
-                    value="```>>quran.quiz.1 text [juz]```contoh: ```>>quran.quiz.1 text 30```",
-                    inline=False)
+    embed.add_field(name = "1. Guess chapter name from verse", value = "```>>quran.quiz.0 <audio / text> [juz] [qari]``` contoh: ```>>quran.quiz.0 text 30```", inline = True)
+    embed.add_field(name = "2. Guess next verse from verse [by juz]", value = "```>>quran.quiz.1 <audio / text> [juz] [qari]``` contoh: ```>>quran.quiz.1 audio 30 3```", inline = True)
+    embed.add_field(name = "3. Guess next verse from verse [by chapter]", value = "```>>quran.quiz.2 <audio / text> [chapter] [qari]``` contoh: ```>>quran.quiz.2 text 78```", inline = True)
+    embed.add_field(name = "4. Guess how many word(s) that missing from a verse", value = "```>>quran.quiz.3 [chapter]``` contoh: ```>>quran.quiz.3 65```", inline = True)
+    embed.add_field(name = "5. Guess the meaning from a word", value = "```>>quran.quiz.4 <audio / text> [language]``` contoh: ```>>quran.quiz.4 audio id```", inline = True)
+    
     await ctx.send(embed=embed)
     
     qari_embed = discord.Embed(
@@ -479,45 +473,20 @@ async def quran_quiz_2(ctx, tipe, chapter=1, qari=7):
     help=
     'To play a random verse from the Quran and ask the user to guess the next verse'
 )
-async def quran_quiz_3(ctx, chapter=1, qari=7):
-    server = ctx.message.guild
-    voice_channel = server.voice_client
-
-    verse_data = quiz.get_random_verse_data_from_chapter(chapter, qari)
+async def quran_quiz_3(ctx, chapter=1):
+    verse_data = quiz.get_random_verse_data_from_chapter(chapter, 7)
     verse_key = verse_data['verse_key']
     chapter_number = verse_key.split(':')[0]
     verse_number = verse_key.split(':')[1]
     verse_number = int(verse_number) + 1
-    audio_url = verse_data['audio']['url']
-    wrapper_soal, ans = quiz.get_uncompleted_glyph_image_from_verse_key(f"{chapter_number}:{verse_number - 1}", filename='soal')
+    wrapper_soal, ans, index_hilang = quiz.get_uncompleted_glyph_image_from_verse_key(f"{chapter_number}:{verse_number - 1}", filename='soal')
 
     user_ans = ""
-
-    # if tipe == 'audio':
-    #     async with ctx.typing():
-    #         voice_channel.play(
-    #             discord.FFmpegPCMAudio(executable="ffmpeg",
-    #                                    source=audio_url,
-    #                                    **FFMPEG_OPTIONS))
-    #         await ctx.send("Dengarkan, berapakah kata yang hilang di ayat tersebut?")
-
-    #         await ctx.send("type a number or type `stop` to stop the quiz")
-            
-    # elif tipe == 'text':
-    #     for i in range(wrapper_soal + 1):
-    #         await ctx.send(file=discord.File(f'img/soal{i}.png'))
-        
-    #     await ctx.send("lanjutannya adalah")
-        
-    #     for i in range(choice[0] + 1):
-    #         await ctx.send(file=discord.File(f'img/{choice[1]}{i}.png'))
-            
-    #     await ctx.send("A. Benar\nB. Salah\nor type `stop` to stop the quiz")
 
     for i in range(wrapper_soal + 1):
         await ctx.send(file=discord.File(f'img/soal{i}.png'))
     
-    await ctx.send("Berapakah kata yang hilang di ayat tersebut?")
+    await ctx.send("Berapakah kata yang hilang dalam ayat tersebut?")
     await ctx.send("type a number or type `stop` to stop the quiz")
     
     def is_correct(m):
@@ -531,27 +500,95 @@ async def quran_quiz_3(ctx, chapter=1, qari=7):
     if str(user_ans.content) == str(ans):
         response = discord.Embed(title="Correct!", color=0x00ff00)
         response.add_field(name="developer note", value="```belum bisa dibedakan antara tanda waqaf dan kata dalam qur'an, sehingga bisa saja yang dihilangkan adalah tanda waqafnya.```", inline=False)
-        response.set_footer(text="missing word(s) attached.")
+        response.set_footer(text=f"index of missing word(s): {' '.join(str(x + 1) for x in index_hilang)}")
         img = discord.File('img/soalcropped.png', filename='soalcropped.png')
         response.set_image(url="attachment://soalcropped.png")
         await ctx.send(embed=response, file=img)
-        # if tipe == 'audio':
-        #     if voice_channel.is_playing():
-        #         await voice_channel.stop()
-        await quran_quiz_3(ctx, chapter, qari)
+        await quran_quiz_3(ctx, chapter)
     elif user_ans.content.lower() == "stop".lower():
         await ctx.send("Stopped!")
     else:
-        response = discord.Embed(title="Wrong!", description=f"```correct: {ans}```", color=0x00ff00)
+        response = discord.Embed(title="Wrong!", description=f"```correct: {ans}```", color=0xff0000)
         response.add_field(name="developer note", value="```belum bisa dibedakan antara tanda waqaf dan kata dalam qur'an, sehingga bisa saja yang dihilangkan adalah tanda waqafnya.```", inline=False)
-        response.set_footer(text="missing word(s) attached.")
+        response.set_footer(text=f"index of missing word(s): {' '.join(str(x + 1) for x in index_hilang)}")
         img = discord.File('img/soalcropped.png', filename='soalcropped.png')
         response.set_image(url="attachment://soalcropped.png")
         await ctx.send(embed=response, file=img)
         # if tipe == 'audio':
         #     if voice_channel.is_playing():
         #         await voice_channel.stop()
-        await quran_quiz_3(ctx, chapter, qari)
+        await quran_quiz_3(ctx, chapter)
+        
+@bot.command(
+    name='quran.quiz.4',
+    help=
+    'To play a random verse from the Quran and ask the user to guess the next verse'
+)
+async def quran_quiz_4(ctx, tipe, language='id'):
+    server = ctx.message.guild
+    voice_channel = server.voice_client
+
+    verse_key = quiz.get_random_verse_key()
+
+    data = []
+
+    while len(data) < 5:
+        verse_key = quiz.get_random_verse_key()
+        data = quiz.get_translation_from_verse_key(verse_key, language)
+        if len(data) >= 6:
+            data = data[:-1]
+            break
+    
+    data = random.sample(data, 5)
+    soal = data[0]
+    kecoh = data[1:]
+    
+    audio_url = "https://verses.quran.com/" + soal['audio_url']
+    
+    quiz.get_glyph_image_from_code(soal['page_number'], soal['code_v2'], filename='kode')
+    ans = soal['translation']['text'].lower()
+    invalid_ans = []
+    
+    for i in kecoh:
+        invalid_ans.append(i['translation']['text'].lower())
+        
+    choices = random.sample(invalid_ans + [ans], 5)
+    ans_index = choices.index(ans)
+    
+    if tipe == 'audio':
+        async with ctx.typing():
+            voice_channel.play(
+                discord.FFmpegPCMAudio(executable="ffmpeg",
+                                       source=audio_url,
+                                       **FFMPEG_OPTIONS))
+            await ctx.send("Dengarkan, pilihlah terjemahan yang benar dari potongan kata tersebut. \n A. " + choices[0] + "\n B. " + choices[1] + "\n C. " + choices[2] + "\n D. " + choices[3] + "\n E. " + choices[4] + "\n atau ketik `stop` untuk menghentikan quiz")
+    elif tipe == 'text':
+        await ctx.send(file = discord.File('img/kode.png'))
+        await ctx.send("Pilihlah terjemahan yang benar dari potongan kata tersebut: \n A. " + choices[0] + "\n B. " + choices[1] + "\n C. " + choices[2] + "\n D. " + choices[3] + "\n E. " + choices[4] + "\n atau ketik `stop` untuk menghentikan quiz")
+    
+    def is_correct(m):
+        return m.author == ctx.author
+
+    try:
+        user_ans = await bot.wait_for("message", check=is_correct, timeout=60)
+    except asyncio.TimeoutError:
+        await ctx.send("oops timeout!")
+
+    if user_ans.content.lower() == ['a', 'b', 'c', 'd', 'e'][ans_index].lower():
+        await ctx.send("Correct!")
+        if tipe == 'audio':
+            if voice_channel.is_playing():
+                await voice_channel.stop()
+        await quran_quiz_4(ctx, tipe)
+    elif user_ans.content.lower() == "stop".lower():
+        await ctx.send("Stopped!")
+    else:
+        await ctx.send(f"Wrong! ```{ans}```")
+        if tipe == 'audio':
+            if voice_channel.is_playing():
+                await voice_channel.stop()
+        await quran_quiz_4(ctx, tipe)
+    
 
 bot.run(os.environ.get('BOT_TOKEN'))  
 # Don't reveal your bot token, regenerate it asap if you do
